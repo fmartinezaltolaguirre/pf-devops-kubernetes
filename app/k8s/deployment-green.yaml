@@ -1,0 +1,80 @@
+# ==========================================
+# Deployment GREEN
+# Nueva versión candidata de la aplicación
+# Utilizado para estrategia Blue/Green
+# ==========================================
+
+apiVersion: apps/v1
+
+kind: Deployment
+
+metadata:
+  name: techwave-green
+  namespace: techwave
+
+spec:
+
+  # Número de réplicas
+  replicas: 2
+
+  # Selector del Deployment
+  selector:
+    matchLabels:
+      app: techwave
+      version: green
+
+  # Plantilla de pods
+  template:
+
+    metadata:
+      labels:
+        app: techwave
+        version: green
+
+    spec:
+
+      containers:
+
+        - name: techwave
+
+          # Imagen local construida con Docker
+          image: ghcr.io/fmartinezaltolaguirre/techwave-app:latest
+
+          # No intentar descargar desde GHCR
+          imagePullPolicy: Always
+
+          ports:
+            - containerPort: 3000
+
+          # Comprueba que la aplicación está lista
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 3000
+
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            timeoutSeconds: 2
+            failureThreshold: 3
+
+          # Comprueba que la aplicación sigue funcionando
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 3000
+
+            initialDelaySeconds: 15
+            periodSeconds: 20
+            timeoutSeconds: 2
+            failureThreshold: 3
+
+          # Límites y reservas de recursos
+          resources:
+
+            requests:
+              cpu: "100m"
+              memory: "128Mi"
+
+            limits:
+              cpu: "500m"
+              memory: "512Mi"

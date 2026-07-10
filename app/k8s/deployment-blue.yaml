@@ -1,0 +1,76 @@
+# ==========================================
+# Deployment BLUE
+# Versión activa de la aplicación
+# ==========================================
+
+apiVersion: apps/v1
+
+kind: Deployment
+
+metadata:
+  name: techwave-blue
+  namespace: techwave
+
+spec:
+
+  # Número de réplicas/pods
+  replicas: 2
+
+  selector:
+    matchLabels:
+      app: techwave
+      version: blue
+
+  template:
+
+    metadata:
+      labels:
+        app: techwave
+        version: blue
+
+    spec:
+
+      containers:
+
+        - name: techwave
+
+          # Imagen local creada con Docker
+          image: ghcr.io/fmartinezaltolaguirre/techwave-app:latest
+
+          # No intentar descargar desde un registry
+          imagePullPolicy: Always
+
+          ports:
+            - containerPort: 3000
+
+          # Verifica que la aplicación está lista
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 3000
+
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            timeoutSeconds: 2
+            failureThreshold: 3
+
+          # Comprueba que la aplicación sigue viva
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 3000
+
+            initialDelaySeconds: 15
+            periodSeconds: 20
+            timeoutSeconds: 2
+            failureThreshold: 3
+
+          resources:
+
+            requests:
+              cpu: "100m"
+              memory: "128Mi"
+
+            limits:
+              cpu: "500m"
+              memory: "512Mi"

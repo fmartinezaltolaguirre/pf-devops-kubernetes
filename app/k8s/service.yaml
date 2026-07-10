@@ -1,0 +1,19 @@
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: techwave-service
+  namespace: techwave
+
+spec:
+
+  selector:
+    app: techwave
+    version: blue
+
+  ports:
+    - port: 80
+      targetPort: 3000
+
+  type: ClusterIP
+
