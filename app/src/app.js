@@ -1,36 +1,20 @@
-const express = require("express");
-const client = require("prom-client");
-
-const app = express();
-
-const register = new client.Registry();
-
-client.collectDefaultMetrics({
-  register
-});
-
 app.get("/", (req, res) => {
-  res.json({
-    application: "TechWave DevOps Platform",
-    status: "running"
-  });
-});
+  res.send(`
+    <html>
+      <head>
+        <title>TechWave DevOps Platform</title>
+      </head>
+      <body>
+        <h1>🚀 TechWave DevOps Platform</h1>
 
-app.get("/health", (req, res) => {
-  res.status(200).json({
-    status: "UP"
-  });
-});
+        <p>Aplicación desplegada en Kubernetes.</p>
 
-app.get("/version", (req, res) => {
-  res.json({
-    version: "1.0.0"
-  });
+        <ul>
+          <li>/health</li>
+          <li>/version</li>
+          <li>/metrics</li>
+        </ul>
+      </body>
+    </html>
+  `);
 });
-
-app.get("/metrics", async (req, res) => {
-  res.set("Content-Type", register.contentType);
-  res.end(await register.metrics());
-});
-
-module.exports = app;
