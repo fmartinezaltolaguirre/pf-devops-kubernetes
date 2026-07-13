@@ -1,0 +1,42 @@
+# ==========================================
+# Ingress TechWave
+# Expone el servicio al exterior
+# ==========================================
+
+apiVersion: networking.k8s.io/v1
+
+kind: Ingress
+
+metadata:
+  name: techwave-ingress
+  namespace: techwave
+
+  annotations:
+
+    # Fuerza uso de HTTP para entorno local
+    nginx.ingress.kubernetes.io/ssl-redirect: "false"
+
+spec:
+
+  ingressClassName: nginx
+
+  rules:
+
+    - host: techwave.local
+
+      http:
+
+        paths:
+
+          - path: /
+            pathType: Prefix
+
+            backend:
+
+              service:
+
+                name: techwave-service
+
+                port:
+                  number: 80
+

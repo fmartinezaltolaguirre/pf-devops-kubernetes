@@ -34,10 +34,8 @@ spec:
 
         - name: techwave
 
-          # Imagen local creada con Docker
           image: ghcr.io/fmartinezaltolaguirre/techwave-app:latest
 
-          # No intentar descargar desde un registry
           imagePullPolicy: Always
 
           ports:

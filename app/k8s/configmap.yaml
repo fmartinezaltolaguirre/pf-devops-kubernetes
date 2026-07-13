@@ -1,0 +1,16 @@
+# ==========================================
+# Configuración de la aplicación
+# ==========================================
+
+apiVersion: v1
+kind: ConfigMap
+
+metadata:
+  name: techwave-config
+  namespace: techwave
+
+data:
+
+  APP_NAME: "TechWave DevOps Platform"
+  APP_ENV: "kubernetes"
+  APP_VERSION: "1.0.0"
