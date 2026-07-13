@@ -1,18 +1,21 @@
-terraform {
+#############################################################
+# AWS Provider Configuration
+#############################################################
 
-  required_version = ">= 1.8"
+provider "aws" {
 
-  required_providers {
+  region = var.aws_region
 
-    azurerm = {
-      source  = "hashicorp/azurerm"
-      version = "~> 4.0"
+  default_tags {
+
+    tags = {
+
+      Project     = var.project_name
+      Environment = var.environment
+      ManagedBy   = "Terraform"
+
     }
 
   }
 
-}
-
-provider "azurerm" {
-  features {}
 }
