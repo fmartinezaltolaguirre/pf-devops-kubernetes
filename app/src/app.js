@@ -1,3 +1,6 @@
+const express = require("express");
+const app = express();
+
 app.get("/", (req, res) => {
   res.send(`
 <!DOCTYPE html>
@@ -128,11 +131,11 @@ body{
 
     <div class="links">
 
-        health">Health Check</a>
+        <a href="/health">Health Check</a>
 
-        /versionVersion</a>
+        <a href="/version">Version</a>
 
-        /metrics
+        <a href="/metrics">Metrics</a>
 
     </div>
 
@@ -154,3 +157,13 @@ body{
 </html>
   `);
 });
+
+app.get("/health", (req, res) => {
+  res.json({ status: "UP" });
+});
+
+app.get("/version", (req, res) => {
+  res.json({ version: "1.0.0" });
+});
+
+module.exports = app;
