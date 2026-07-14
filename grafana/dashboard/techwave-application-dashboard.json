@@ -1,0 +1,149 @@
+apiVersion: v1
+kind: ConfigMap
+
+metadata:
+  name: grafana-dashboard-techwave-application
+  namespace: monitoring
+
+  labels:
+    grafana_dashboard: "1"
+
+data:
+  techwave-application-dashboard.json: |
+    {
+      "title": "TechWave Application Dashboard",
+      "timezone": "browser",
+      "schemaVersion": 39,
+      "version": 1,
+      "refresh": "10s",
+      "panels": [
+        {
+          "id": 1,
+          "title": "Availability",
+          "type": "stat",
+          "gridPos": {
+            "h": 4,
+            "w": 6,
+            "x": 0,
+            "y": 0
+          },
+          "targets": [
+            {
+              "expr": "up"
+            }
+          ]
+        },
+        {
+          "id": 2,
+          "title": "Latency P95",
+          "type": "stat",
+          "gridPos": {
+            "h": 4,
+            "w": 6,
+            "x": 6,
+            "y": 0
+          },
+          "targets": [
+            {
+              "expr": "histogram_quantile(0.95, rate(http_request_duration_seconds_bucket[5m]))"
+            }
+          ]
+        },
+        {
+          "id": 3,
+          "title": "Requests per Second",
+          "type": "stat",
+          "gridPos": {
+            "h": 4,
+            "w": 6,
+            "x": 12,
+            "y": 0
+          },
+          "targets": [
+            {
+              "expr": "rate(http_requests_total[1m])"
+            }
+          ]
+        },
+        {
+          "id": 4,
+          "title": "Error Rate",
+          "type": "stat",
+          "gridPos": {
+            "h": 4,
+            "w": 6,
+            "x": 18,
+            "y": 0
+          },
+          "targets": [
+            {
+              "expr": "rate(http_requests_total{status=~\"5..\"}[5m])"
+            }
+          ]
+        },
+        {
+          "id": 5,
+          "title": "Application Latency",
+          "type": "timeseries",
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 0,
+            "y": 4
+          },
+          "targets": [
+            {
+              "expr": "rate(http_request_duration_seconds_sum[5m])"
+            }
+          ]
+        },
+        {
+          "id": 6,
+          "title": "Requests per Second",
+          "type": "timeseries",
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 12,
+            "y": 4
+          },
+          "targets": [
+            {
+              "expr": "rate(http_requests_total[1m])"
+            }
+          ]
+        },
+        {
+          "id": 7,
+          "title": "Memory Usage",
+          "type": "timeseries",
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 0,
+            "y": 12
+          },
+          "targets": [
+            {
+              "expr": "process_resident_memory_bytes"
+            }
+          ]
+        },
+        {
+          "id": 8,
+          "title": "CPU Usage",
+          "type": "timeseries",
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 12,
+            "y": 12
+          },
+          "targets": [
+            {
+              "expr": "rate(process_cpu_seconds_total[1m])"
+            }
+          ]
+        }
+      ]
+    }
