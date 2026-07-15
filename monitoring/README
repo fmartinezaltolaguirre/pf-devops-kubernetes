@@ -1,0 +1,50 @@
+# Monitoring Stack – TechWave DevOps Platform
+
+## Overview
+
+This directory contains the complete observability platform implemented for the TechWave DevOps Platform project.
+
+The monitoring stack follows Cloud Native best practices and provides capabilities for:
+
+- Metrics collection
+- Centralized logging
+- Distributed observability
+- Alerting and notifications
+- Infrastructure monitoring
+- Kubernetes monitoring
+- Application monitoring
+- Dashboard visualization
+
+---
+
+# Architecture
+
+```text
+                     ┌──────────────────┐
+                     │    Grafana       │
+                     │  Dashboards      │
+                     └────────▲─────────┘
+                              │
+
+        ┌─────────────────────┼─────────────────────┐
+        │                     │                     │
+        ▼                     ▼                     ▼
+
+   Prometheus              Loki           Alertmanager
+   (Metrics)              (Logs)            (Alerts)
+
+        ▲                     ▲
+        │                     │
+
+  ┌─────┼──────────┐       Promtail
+  │     │          │
+
+  ▼     ▼          ▼
+
+TechWave    Node      cAdvisor
+Application Exporter
+
+        ▲
+        │
+
+OpenTelemetry Collector
