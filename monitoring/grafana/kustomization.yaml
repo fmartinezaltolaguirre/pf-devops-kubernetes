@@ -1,0 +1,5 @@
+resources:
+  - namespace.yaml
+  - datasource-configmap.yaml
+  - deployment.yaml
+  - service.yaml
