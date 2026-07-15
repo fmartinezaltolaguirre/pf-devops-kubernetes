@@ -1,0 +1,9 @@
+resources:
+  - prometheus
+  - grafana
+  - loki
+  - promtail
+  - alertmanager
+  - node-exporter
+  - cadvisor
+  - opentelemetry
