@@ -1,43 +1,109 @@
+#############################################################
+# TechWave DevOps Platform
+#
+# Component: Grafana
+#
+# Purpose:
+# Visualization platform used to display metrics,
+# logs and traces collected from the platform.
+#
+# Integrated Components:
+# - Prometheus
+# - Loki
+# - Alertmanager
+# - OpenTelemetry
+#
+# Dashboards:
+# - Application Dashboard
+# - Kubernetes Dashboard
+# - Infrastructure Dashboard
+# - Executive Dashboard
+#
+#############################################################
+
 apiVersion: apps/v1
 kind: Deployment
+
 metadata:
   name: grafana
   namespace: monitoring
 
 spec:
+
+  ###########################################################
+  # Number of Grafana replicas
+  ###########################################################
+
   replicas: 1
+
+  ###########################################################
+  # Label selector
+  ###########################################################
 
   selector:
     matchLabels:
       app: grafana
 
+  ###########################################################
+  # Pod template
+  ###########################################################
+
   template:
+
     metadata:
       labels:
         app: grafana
 
     spec:
+
+      #######################################################
+      # Grafana Container
+      #######################################################
+
       containers:
 
-      - name: grafana
+        - name: grafana
 
-        image: grafana/grafana:11.2.0
+          image: grafana/grafana:11.2.0
 
-        ports:
-        - containerPort: 3000
+          imagePullPolicy: IfNotPresent
 
-        env:
-        - name: GF_SECURITY_ADMIN_USER
-          value: admin
+          ###################################################
+          # Grafana Web Interface
+          ###################################################
 
-        - name: GF_SECURITY_ADMIN_PASSWORD
-          value: admin123
+          ports:
+            - containerPort: 3000
 
-        volumeMounts:
-        - name: datasources
-          mountPath: /etc/grafana/provisioning/datasources
+          ###################################################
+          # Default Administrative Credentials
+          #
+          # For production environments it is recommended
+          # to use Kubernetes Secrets instead of hardcoded
+          # values.
+          ###################################################
 
-      volumes:
-      - name: datasources
-        configMap:
-          name: grafana-datasources
+          env:
+
+            - name: GF_SECURITY_ADMIN_USER
+              value: admin
+
+            - name: GF_SECURITY_ADMIN_PASSWORD
+              value: admin123
+
+          ###################################################
+          # Mount Provisioning Configuration
+          ###################################################
+
+          volumeMounts:
+
+            #
+            # Datasources
+            #
+            - name: datasources
+              mountPath: /etc/grafana/provisioning/datasources
+
+            #
+            # Dashboard Provider
+            #
+            - name: dashboard-provider
