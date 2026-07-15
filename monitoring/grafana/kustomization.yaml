@@ -3,10 +3,7 @@ resources:
   - datasource-configmap.yaml
   - dashboard-provider-configmap.yaml
 
-  - dashboard-configmaps/application-dashboard.yaml
-  - dashboard-configmaps/kubernetes-dashboard.yaml
-  - dashboard-configmaps/infrastructure-dashboard.yaml
-  - dashboard-configmaps/executive-dashboard.yaml
+  - dashboard/application-dashboard-configmap.yaml
 
   - deployment.yaml
   - service.yaml
