@@ -4,20 +4,16 @@
 # Component: Grafana
 #
 # Purpose:
-# Visualization platform used to display metrics,
-# logs and traces collected from the platform.
+# Central visualization platform used to display:
 #
-# Integrated Components:
-# - Prometheus
-# - Loki
-# - Alertmanager
-# - OpenTelemetry
+# - Prometheus metrics
+# - Loki logs
+# - Kubernetes monitoring data
+# - Infrastructure monitoring data
+# - Executive KPIs
 #
-# Dashboards:
-# - Application Dashboard
-# - Kubernetes Dashboard
-# - Infrastructure Dashboard
-# - Executive Dashboard
+# Dashboards are provisioned automatically using
+# ConfigMaps and mounted at startup.
 #
 #############################################################
 
@@ -37,7 +33,7 @@ spec:
   replicas: 1
 
   ###########################################################
-  # Label selector
+  # Deployment Selector
   ###########################################################
 
   selector:
@@ -45,7 +41,7 @@ spec:
       app: grafana
 
   ###########################################################
-  # Pod template
+  # Pod Template
   ###########################################################
 
   template:
@@ -69,18 +65,16 @@ spec:
           imagePullPolicy: IfNotPresent
 
           ###################################################
-          # Grafana Web Interface
+          # Web Interface
           ###################################################
 
           ports:
             - containerPort: 3000
 
           ###################################################
-          # Default Administrative Credentials
+          # Administrator Credentials
           #
-          # For production environments it is recommended
-          # to use Kubernetes Secrets instead of hardcoded
-          # values.
+          # For production environments use Secrets.
           ###################################################
 
           env:
@@ -92,18 +86,105 @@ spec:
               value: admin123
 
           ###################################################
-          # Mount Provisioning Configuration
+          # Volume Mounts
           ###################################################
 
           volumeMounts:
 
-            #
-            # Datasources
-            #
+            #################################################
+            # Datasources Provisioning
+            #################################################
+
             - name: datasources
               mountPath: /etc/grafana/provisioning/datasources
 
-            #
-            # Dashboard Provider
-            #
+            #################################################
+            # Dashboard Provider Provisioning
+            #################################################
+
             - name: dashboard-provider
+              mountPath: /etc/grafana/provisioning/dashboards
+
+            #################################################
+            # Application Dashboard
+            #################################################
+
+            - name: application-dashboard
+              mountPath: /var/lib/grafana/dashboards/application
+
+            #################################################
+            # Kubernetes Dashboard
+            #################################################
+
+            - name: kubernetes-dashboard
+              mountPath: /var/lib/grafana/dashboards/kubernetes
+
+            #################################################
+            # Infrastructure Dashboard
+            #################################################
+
+            - name: infrastructure-dashboard
+              mountPath: /var/lib/grafana/dashboards/infrastructure
+
+            #################################################
+            # Executive Dashboard
+            #################################################
+
+            - name: executive-dashboard
+              mountPath: /var/lib/grafana/dashboards/executive
+
+      #######################################################
+      # Volumes
+      #######################################################
+
+      volumes:
+
+        #####################################################
+        # Datasources ConfigMap
+        #####################################################
+
+        - name: datasources
+          configMap:
+            name: grafana-datasources
+
+        #####################################################
+        # Dashboard Provider ConfigMap
+        #####################################################
+
+        - name: dashboard-provider
+          configMap:
+            name: grafana-dashboard-provider
+
+        #####################################################
+        # Application Dashboard ConfigMap
+        #####################################################
+
+        - name: application-dashboard
+          configMap:
+            name: grafana-application-dashboard
+
+        #####################################################
+        # Kubernetes Dashboard ConfigMap
+        #####################################################
+
+        - name: kubernetes-dashboard
+          configMap:
+            name: grafana-kubernetes-dashboard
+
+        #####################################################
+        # Infrastructure Dashboard ConfigMap
+        #####################################################
+
+        - name: infrastructure-dashboard
+          configMap:
+            name: grafana-infrastructure-dashboard
+
+        #####################################################
+        # Executive Dashboard ConfigMap
+        #####################################################
+
+        - name: executive-dashboard
+          configMap:
+            name: grafana-executive-dashboard
+
+

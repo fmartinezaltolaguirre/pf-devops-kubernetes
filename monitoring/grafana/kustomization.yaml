@@ -1,9 +1,33 @@
+#############################################################
+# Grafana
+#############################################################
+
 resources:
-  - namespace.yaml
+
+  ###########################################################
+  # Datasources
+  ###########################################################
+
   - datasource-configmap.yaml
+
+  ###########################################################
+  # Dashboard Provider
+  ###########################################################
+
   - dashboard-provider-configmap.yaml
 
+  ###########################################################
+  # Dashboards
+  ###########################################################
+
   - dashboard/application-dashboard-configmap.yaml
+  - dashboard/kubernetes-dashboard-configmap.yaml
+  - dashboard/infrastructure-dashboard-configmap.yaml
+  - dashboard/executive-dashboard-configmap.yaml
+
+  ###########################################################
+  # Runtime Components
+  ###########################################################
 
   - deployment.yaml
   - service.yaml

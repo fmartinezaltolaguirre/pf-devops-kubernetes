@@ -1,5 +1,8 @@
+#############################################################
+# Promtail
+#############################################################
+
 resources:
-  - namespace.yaml
-  - serviceaccount.yaml
   - configmap.yaml
   - daemonset.yaml
+  - serviceaccount.yaml

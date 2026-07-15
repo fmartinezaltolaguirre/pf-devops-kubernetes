@@ -1,4 +1,21 @@
+#############################################################
+# Node Exporter
+#
+# Infrastructure metrics collection
+#
+# Collected Metrics:
+# - CPU
+# - Memory
+# - Disk
+# - Filesystem
+# - Network
+#
+#############################################################
+
 resources:
-  - namespace.yaml
+
+  # Node Exporter DaemonSet
   - daemonset.yaml
+
+  # Node Exporter Service
   - service.yaml

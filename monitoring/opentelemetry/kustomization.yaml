@@ -1,5 +1,12 @@
+#############################################################
+# OpenTelemetry Collector
+#############################################################
+
 resources:
-  - namespace.yaml
+
+  # Configuration
   - configmap.yaml
+
+  # Runtime Components
   - deployment.yaml
   - service.yaml

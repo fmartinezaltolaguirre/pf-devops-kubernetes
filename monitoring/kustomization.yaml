@@ -1,9 +1,75 @@
+#############################################################
+# TechWave DevOps Platform
+#
+# Monitoring and Observability Stack
+#
+# Purpose:
+# Deploy the complete monitoring platform using Kustomize.
+#
+# Components:
+# - Prometheus
+# - Grafana
+# - Loki
+# - Promtail
+# - Alertmanager
+# - Node Exporter
+# - cAdvisor
+# - OpenTelemetry Collector
+#
+# Deployment:
+#
+# kubectl apply -k monitoring
+#
+#############################################################
+
 resources:
+
+  ###########################################################
+  # Shared Namespace
+  ###########################################################
+
+  - namespace.yaml
+
+  ###########################################################
+  # Metrics Collection
+  ###########################################################
+
+  # Prometheus Server
   - prometheus
-  - grafana
-  - loki
-  - promtail
-  - alertmanager
-  - node-exporter
-  - cadvisor
+
+  # OpenTelemetry Collector
   - opentelemetry
+
+  ###########################################################
+  # Visualization
+  ###########################################################
+
+  # Grafana Dashboards and Datasources
+  - grafana
+
+  ###########################################################
+  # Log Management
+  ###########################################################
+
+  # Log Storage
+  - loki
+
+  # Log Collection Agent
+  - promtail
+
+  ###########################################################
+  # Alerting
+  ###########################################################
+
+  # Alert Processing and Routing
+  - alertmanager
+
+  ###########################################################
+  # Infrastructure Monitoring
+  ###########################################################
+
+  # Node Metrics
+  - node-exporter
+
+  # Container Metrics
+  - cadvisor
