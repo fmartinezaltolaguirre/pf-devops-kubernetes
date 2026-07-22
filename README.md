@@ -313,5 +313,4 @@ La arquitectura contempla futuras integraciones con:
 - Endpoint `/metrics`
 - Observabilidad básica mediante Prometheus Client
 
-### Próximas Evoluciones
 
