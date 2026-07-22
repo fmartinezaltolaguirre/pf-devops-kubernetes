@@ -11,7 +11,7 @@
 ![Docker](https://img.shields.io/badge/Dainerized-blue?logo=docker&logoColor=white)
 ![Kubernetes](https://img.shields.io/badge/Kubernetes-26CE5?logo=kubernetes&logoColor=white)
 
-![GitHub Actions](https://img.shields.io/badge/GitHub%20Actions-CI%2FCD-2088FF?logo=github&Terraform)(https://img.she/Terraform-IaC-623CE4?logo=terraform&logoColor=white)
+![GitHub Actions](https://img.shields.io/badge/GitHub%20Actions-CI%2FCD-2088FF?logo=github&Terraform)
 ![Prometheus](https://img.shields.io/badge/Prometheus-Metricsrometheus&logoColor=white)
 ![Blue-Green](https://img.shieldsoyment-Blue--Green-brightgreen)
 ![RBs://img.shields.io/badge/RBAC-Implemented-success
