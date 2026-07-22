@@ -8,7 +8,16 @@
 ![Node.js](https://img.shields.io/badge/Node.js-22.x-green?logo=node.js&logoColor=white)
 ![Terraform](https://img.shields.io/badge/Terraform-IaC-623CE4?logo=terraform&logoColor=white)
 ![License](https://img.shields.io/badge/License-ISC-blue)
-
+![Docker](https://img.shields.io/badge/Dainerized-blue?logo=docker&logoColor=white
+![Kubernetes](https://img.shields.io/badge/Kubernetes-26CE5?logo=kubernetes&logoColor=white
+![GitHub Actions](https://img.shields.io/badge/GitHub%20Actions-CI%2FCD-2088FF?logo=github&Terraform](https://img.she/Terraform-IaC-623CE4?logo=terraform&logoColor=white
+![Prometheus](https://img.shields.io/badge/Prometheus-Metricsrometheus&logoColor=white
+![Blue-Green](https://img.shieldsoyment-Blue--Green-brightgreen
+![RBs://img.shields.io/badge/RBAC-Implemented-success
+![HPA](https://elds.io/badge/HPA-Autoscaling-success
+![Observability](https://img.shieldsbility-Enabled-success
+![SLA](https://img.shields.io/badge/SLA-99.5%25-successect](https://img.shields.io/badge/Project-Completedn
+![License](https://img.shields.ionse-ISC-blue
 ---
 
 ## 📖 Descripción
