@@ -1,78 +1,59 @@
 # Terraform Infrastructure as Code
 
-## Overview
+## Resumen
 
-This directory contains the Infrastructure as Code (IaC) implementation for the **TechWave DevOps Platform**.
+La carpeta `terraform/` del repositorio contiene una base de Infraestructura como Código para desplegar la plataforma TechWave sobre AWS, con una estructura modular pensada para un entorno Kubernetes/EKS.
 
-The purpose of this Terraform project is to provide a modular, reusable and scalable foundation for deploying the TechWave platform on Amazon Web Services (AWS), following Cloud Native and DevOps principles.
-
-The infrastructure design supports future deployment of:
-
-- Amazon EKS (Elastic Kubernetes Service)
-- Amazon ECR (Elastic Container Registry)
-- Amazon Route53
-- AWS IAM
-- AWS KMS
-- AWS Secrets Manager
-- Amazon Managed Prometheus
-- Amazon Managed Grafana
-- CloudWatch
-
-Although the current implementation of the project has been validated using Kubernetes on Docker Desktop, this Terraform structure provides the foundation for a future enterprise-grade AWS deployment.
+Es importante matizar que este repositorio tiene una estructura de Terraform bien organizada y orientada a la práctica, pero no es un despliegue completamente validado en producción ni una implementación final de un entorno cloud real. Actualmente funciona más como una base académica/tecnológica sobre la que seguir ampliando.
 
 ---
 
-# Architecture
+## Estado real del repo
 
-```text
-Terraform
-    │
-    ▼
-AWS Account
-    │
- ┌──┬─────────────┬──────────┬───────────┐
- │  │             │          │           │
- ▼  ▼             ▼          ▼           ▼
+### Lo que sí existe
 
-VPC EKS          ECR      Route53    Security
+- Estructura principal de Terraform con archivos raíz:
+  - `main.tf`
+  - `provider.tf`
+  - `variables.tf`
+  - `outputs.tf`
+  - `versions.tf`
+  - `backend.tf`
+- Módulos con intención de separación funcional:
+  - `modules/networking`
+  - `modules/ecr`
+  - `modules/eks`
+  - `modules/iam`
+  - `modules/security`
+  - `modules/monitoring`
+  - `modules/route53`
+- Definición de variables comunes y provisionamiento de AWS provider.
+- Integración de la composición principal con módulos por dominio.
 
- │
- ▼
+### Lo que todavía no es completamente real
 
-TechWave Application
-
- │
- ▼
-
-Monitoring
-(Prometheus / Grafana / CloudWatch)
-```
+- No hay evidencia de un `terraform apply` validado contra AWS en este repo.
+- El backend actual es `local`, no remoto (`S3 + DynamoDB`).
+- Algunos módulos están definidos como estructura de base, pero no todos han sido completamente desplegados o comprobados en ejecución real.
+- La documentación debe leerse como una base de infraestructura lista para evolucionar, no como una plataforma ya operativa en producción.
 
 ---
 
-# Repository Structure
+## Estructura actual
 
 ```text
 terraform/
-│
 ├── README.md
-├── versions.tf
-├── provider.tf
 ├── backend.tf
+├── main.tf
+├── provider.tf
 ├── variables.tf
 ├── outputs.tf
-├── main.tf
-│
+├── versions.tf
 ├── environments/
 │   ├── dev/
-│   │   └── terraform.tfvars
-│   │
 │   ├── pre/
-│   │   └── terraform.tfvars
-│   │
 │   └── prod/
-│       └── terraform.tfvars
-│
 └── modules/
     ├── networking/
     ├── ecr/
@@ -85,420 +66,213 @@ terraform/
 
 ---
 
-# Terraform Files
+## Archivos raíz
 
-## versions.tf
+### `versions.tf`
 
-Defines Terraform and provider version requirements.
+Define la versión mínima de Terraform y el proveedor AWS requerido.
 
-Responsibilities:
+```hcl
+terraform {
+  required_version = ">= 1.8"
 
-- Terraform version control.
-- AWS provider version control.
-- Reproducible deployments.
-
----
-
-## provider.tf
-
-Configures the AWS provider.
-
-Responsibilities:
-
-- AWS authentication.
-- Region selection.
-- Default project tagging.
-
----
-
-## backend.tf
-
-Configures Terraform state storage.
-
-Current implementation:
-
-```text
-Local Backend
+  required_providers {
+    aws = {
+      source  = "hashicorp/aws"
+      version = "~> 5.0"
+    }
+  }
+}
 ```
 
-Future evolution:
+### `provider.tf`
 
-```text
-AWS S3 Backend
-+
-DynamoDB State Locking
+Configura el provider AWS con región configurable y etiquetas por defecto.
+
+```hcl
+provider "aws" {
+  region = var.aws_region
+
+  default_tags {
+    tags = {
+      Project     = var.project_name
+      Environment = var.environment
+      ManagedBy   = "Terraform"
+    }
+  }
+}
 ```
 
-Benefits:
+### `variables.tf`
 
-- Team collaboration.
-- High availability.
-- State protection.
-- Auditability.
+Contiene variables globales para nombre del proyecto, entorno, región y rangos de red.
 
----
+Ejemplos relevantes:
 
-## variables.tf
+- `project_name`
+- `environment`
+- `aws_region`
+- `vpc_cidr`
+- `public_subnet_a_cidr`
+- `public_subnet_b_cidr`
+- `private_subnet_a_cidr`
+- `private_subnet_b_cidr`
 
-Centralized definition of all reusable variables.
+### `backend.tf`
 
-Examples:
+Actualmente usa backend local:
 
-- Environment.
-- AWS region.
-- CIDR blocks.
-- Availability zones.
-- Project metadata.
-
-Benefits:
-
-- Environment portability.
-- Reusability.
-- Standardization.
-
----
-
-## outputs.tf
-
-Exposes important infrastructure values.
-
-Examples:
-
-- VPC ID.
-- EKS Endpoint.
-- ECR URL.
-- Route53 Zone ID.
-
-Benefits:
-
-- Module integration.
-- CI/CD integration.
-- Operational visibility.
-
----
-
-## main.tf
-
-Main Terraform composition file.
-
-Responsible for orchestrating:
-
-- Networking Module.
-- ECR Module.
-- EKS Module.
-- IAM Module.
-- Security Module.
-- Monitoring Module.
-- Route53 Module.
-
----
-
-# Environments
-
-Terraform supports multiple independent environments.
-
-## Development
-
-```text
-environments/dev
+```hcl
+terraform {
+  backend "local" {}
+}
 ```
 
-Purpose:
+Esto es útil para entornos académicos o locales, pero para equipos reales y despliegues compartidos se recomienda migrarlo a:
 
-- Development.
-- Experiments.
-- Functional validation.
+- S3 para almacenamiento del estado
+- DynamoDB para locking
+- trazabilidad y colaboración
 
----
+### `main.tf`
 
-## Preproduction
+Es el punto de composición principal del despliegue. Aquí se invocan los módulos de networking, ECR, EKS, IAM, security, monitoring y route53.
 
-```text
-environments/pre
+```hcl
+module "networking" {
+  source = "./modules/networking"
+  environment = var.environment
+  vpc_cidr = var.vpc_cidr
+  public_subnet_a_cidr = var.public_subnet_a_cidr
+  public_subnet_b_cidr = var.public_subnet_b_cidr
+  private_subnet_a_cidr = var.private_subnet_a_cidr
+  private_subnet_b_cidr = var.private_subnet_b_cidr
+  availability_zone_a = var.availability_zone_a
+  availability_zone_b = var.availability_zone_b
+}
 ```
 
-Purpose:
+### `outputs.tf`
 
-- Integration testing.
-- Acceptance testing.
-- Release validation.
+Expone valores útiles para integrar la infraestructura con el resto del sistema, por ejemplo:
 
----
-
-## Production
-
-```text
-environments/prod
-```
-
-Purpose:
-
-- Production workloads.
-- End-user traffic.
-- Business services.
+- `vpc_id`
+- `ecr_repository_url`
+- `eks_cluster_name`
+- `eks_cluster_endpoint`
+- `kms_key_arn`
+- `hosted_zone_id`
 
 ---
 
-# Modules
+## Módulos previstos
 
-The infrastructure follows a modular design.
+### `modules/networking`
 
-Each module is independent and reusable.
+Objetivo: provisionar la red base necesaria para la infraestructura del proyecto.
 
----
-
-# Networking Module
-
-Location:
-
-```text
-modules/networking
-```
-
-Purpose:
-
-Manage network infrastructure.
-
-Resources:
+Incluye la intención de crear:
 
 - VPC
-- Public Subnets
-- Private Subnets
-- Internet Gateway
-- NAT Gateway
-- Route Tables
-- Security Groups
+- subredes públicas y privadas
+- tablas de enrutamiento
+- gateway
+- seguridad de red
 
-Outputs:
+### `modules/ecr`
 
-- VPC ID
-- Public Subnet IDs
-- Private Subnet IDs
+Objetivo: centralizar la gestión del registro de imágenes Docker.
 
-Benefits:
+Se orienta a recursos como:
 
-- Network segmentation.
-- High availability.
-- Security isolation.
+- ECR repository
+- políticas de ciclo de vida
+- control de versiones de imágenes
 
----
+### `modules/eks`
 
-# ECR Module
+Objetivo: desplegar el cluster de Kubernetes gestionado por AWS.
 
-Location:
+Se enfoca en:
 
-```text
-modules/ecr
-```
+- EKS cluster
+- node groups
+- networking y seguridad de control plane
 
-Purpose:
+### `modules/iam`
 
-Manage container repositories.
+Objetivo: gestionar identidades y permisos con el principio de mínimo privilegio.
 
-Resources:
+### `modules/security`
 
-- Amazon ECR Repository
-- Image Scanning
-- Immutable Tags
-- Lifecycle Policies
+Objetivo: manejar seguridad de infraestructura, incluidos:
 
-Outputs:
-
-- Repository Name
-- Repository URL
-- Repository ARN
-
-Benefits:
-
-- Centralized image storage.
-- Image versioning.
-- Secure distribution.
-
----
-
-# EKS Module
-
-Location:
-
-```text
-modules/eks
-```
-
-Purpose:
-
-Provision Kubernetes infrastructure.
-
-Resources:
-
-- EKS Cluster
-- Worker Nodes
-- Security Groups
-- Logging Configuration
-
-Outputs:
-
-- Cluster Name
-- Cluster Endpoint
-- Cluster Version
-
-Benefits:
-
-- Managed Kubernetes.
-- High availability.
-- Scalability.
-
----
-
-# IAM Module
-
-Location:
-
-```text
-modules/iam
-```
-
-Purpose:
-
-Manage permissions and identities.
-
-Resources:
-
-- IAM Roles
-- IAM Policies
-- Service Accounts
-- EKS Integrations
-
-Outputs:
-
-- Cluster Role ARN
-- Node Group Role ARN
-
-Benefits:
-
-- Least privilege principle.
-- Centralized access control.
-- Improved governance.
-
----
-
-# Security Module
-
-Location:
-
-```text
-modules/security
-```
-
-Purpose:
-
-Provide security services.
-
-Resources:
-
-- AWS KMS
+- KMS
 - Secrets Manager
-- Encryption Keys
-- Secret Storage
+- cifrado
 
-Outputs:
+### `modules/monitoring`
 
-- KMS Key ARN
-- Secret Identifier
+Objetivo: preparar la observabilidad de la infraestructura con Prometheus, Grafana y métricas de AWS.
 
-Benefits:
+### `modules/route53`
 
-- Encryption at rest.
-- Secret management.
-- Security compliance.
+Objetivo: gestionar DNS y resolución de nombres para servicios de la plataforma.
 
 ---
 
-# Monitoring Module
+## Cómo usarlo
 
-Location:
+### Inicializar
 
-```text
-modules/monitoring
+```bash
+cd terraform
+terraform init
 ```
 
-Purpose:
+### Validar sintaxis
 
-Provide observability services.
+```bash
+terraform fmt
+terraform validate
+```
 
-Resources:
+### Ver plan
 
-- CloudWatch
-- Amazon Managed Prometheus
-- Amazon Managed Grafana
+```bash
+terraform plan
+```
 
-Outputs:
+### Aplicar
 
-- CloudWatch Log Group
-- Prometheus Workspace
-- Grafana Workspace
+```bash
+terraform apply
+```
 
-Benefits:
+### Destruir
 
-- Monitoring.
-- Alerting.
-- Operational dashboards.
+```bash
+terraform destroy
+```
 
 ---
 
-# Route53 Module
+## Recomendaciones para producción
 
-Location:
+Este repositorio está bien estructurado como base de proyecto, pero para producción real se recomienda:
 
-```text
-modules/route53
-```
-
-Purpose:
-
-Manage DNS services.
-
-Resources:
-
-- Hosted Zones
-- DNS Records
-- Application Endpoints
-
-Examples:
-
-```text
-app.techwave.com
-grafana.techwave.com
-prometheus.techwave.com
-```
-
-Outputs:
-
-- Hosted Zone ID
-- Domain Name
-
-Benefits:
-
-- Service discovery.
-- DNS management.
-- Future scalability.
+- cambiar el backend local por S3 + DynamoDB
+- separar entornos (`dev`, `pre`, `prod`) con tfvars específicos
+- añadir `remote_state` / lock / auditability
+- revisar y validar cada módulo individualmente
+- introducir `terraform validate` y tests de calidad en CI
+- usar `workspaces` o módulos por entorno para evitar acoplamiento
+- añadir policies y controles de seguridad para IAM y networking
 
 ---
 
-# Deployment Workflow
+## Conclusión
 
-```text
-GitHub
-    │
-    ▼
-GitHub Actions
-    │
-    ▼
-Terraform Plan
-    │
-    ▼
-Terraform Apply
-    │
-    ▼
-AWS Infrastructure
-    │
-    ▼
+La carpeta `terraform/` es una base sólida de IaC para la plataforma TechWave, con una estructura clara y alineada con una arquitectura cloud-native. Sin embargo, hay que entenderla como un proyecto en evolución: bien organizada, pero aún no completamente validada como infraestructura en producción real.
+
+Es una excelente base académica y de aprendizaje, y un punto de partida serio para una implementación real en AWS/EKS.
