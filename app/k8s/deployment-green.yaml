@@ -5,74 +5,76 @@
 # ==========================================
 
 apiVersion: apps/v1
-
 kind: Deployment
-
 metadata:
   name: techwave-green
   namespace: techwave
-
+  labels:
+    app: techwave
+    version: green
 spec:
-
-  # Número de réplicas
   replicas: 2
-
-  # Selector del Deployment
   selector:
     matchLabels:
       app: techwave
       version: green
-
-  # Plantilla de pods
   template:
-
     metadata:
       labels:
         app: techwave
         version: green
-
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "3000"
+        prometheus.io/path: "/metrics"
     spec:
-
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1001
+        fsGroup: 1001
       containers:
-
         - name: techwave
-
           image: ghcr.io/fmartinezaltolaguirre/techwave-app:latest
-
           imagePullPolicy: Always
-
           ports:
-            - containerPort: 3000
-
-          # Comprueba que la aplicación está lista
+            - name: http
+              containerPort: 3000
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 1001
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - ALL
+          startupProbe:
+            httpGet:
+              path: /health
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            timeoutSeconds: 2
+            failureThreshold: 12
           readinessProbe:
             httpGet:
               path: /health
-              port: 3000
-
+              port: http
             initialDelaySeconds: 5
             periodSeconds: 10
             timeoutSeconds: 2
             failureThreshold: 3
-
-          # Comprueba que la aplicación sigue funcionando
           livenessProbe:
             httpGet:
               path: /health
-              port: 3000
-
+              port: http
             initialDelaySeconds: 15
             periodSeconds: 20
             timeoutSeconds: 2
             failureThreshold: 3
-
-          # Límites y reservas de recursos
           resources:
-
             requests:
               cpu: "100m"
               memory: "128Mi"
-
             limits:
               cpu: "500m"
               memory: "512Mi"
