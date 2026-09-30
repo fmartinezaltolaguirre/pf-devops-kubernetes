@@ -1,5 +1,54 @@
 const express = require("express");
+const promClient = require("prom-client");
+
 const app = express();
+
+// Collect default Node.js metrics with custom prefix
+promClient.collectDefaultMetrics({
+  prefix: "techwave_",
+  timeout: 5000,
+});
+
+// Custom Counter: Total HTTP requests
+const httpRequestsTotal = new promClient.Counter({
+  name: "techwave_http_requests_total",
+  help: "Total number of HTTP requests",
+  labelNames: ["method", "route", "status_code"],
+});
+
+// Custom Histogram: HTTP request duration
+const httpRequestDuration = new promClient.Histogram({
+  name: "techwave_http_request_duration_seconds",
+  help: "Duration of HTTP requests in seconds",
+  labelNames: ["method", "route", "status_code"],
+});
+
+// Middleware to track HTTP request metrics
+app.use((req, res, next) => {
+  const start = process.hrtime.bigint();
+
+  res.on("finish", () => {
+    const route = req.route ? req.route.path : req.path;
+    const responseTime = Number(process.hrtime.bigint() - start) / 1e9;
+
+    httpRequestsTotal.inc({
+      method: req.method,
+      route,
+      status_code: res.statusCode,
+    });
+
+    httpRequestDuration.observe(
+      {
+        method: req.method,
+        route,
+        status_code: res.statusCode,
+      },
+      responseTime
+    );
+  });
+
+  next();
+});
 
 app.get("/", (req, res) => {
   res.send(`
@@ -164,6 +213,11 @@ app.get("/health", (req, res) => {
 
 app.get("/version", (req, res) => {
   res.json({ version: "1.0.0" });
+});
+
+app.get("/metrics", async (req, res) => {
+  res.set("Content-Type", promClient.register.contentType);
+  res.end(await promClient.register.metrics());
 });
 
 module.exports = app;

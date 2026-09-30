@@ -17,4 +17,13 @@ describe("TechWave API", () => {
     expect(response.body.version).toBe("1.0.0");
   });
 
+  test("GET /metrics returns Prometheus metrics", async () => {
+    const response = await request(app).get("/metrics");
+
+    expect(response.statusCode).toBe(200);
+    expect(response.headers["content-type"]).toContain("text/plain");
+    expect(response.text).toContain("techwave_http_requests_total");
+    expect(response.text).toContain("techwave_process_cpu_user_seconds_total");
+  });
+
 });
