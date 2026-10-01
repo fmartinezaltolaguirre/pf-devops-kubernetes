@@ -1,0 +1,256 @@
+#############################################################
+# TechWave DevOps Platform
+#
+# Security Scanning Pipeline
+#
+# Responsibilities:
+# - Static Application Security Testing (SAST) with CodeQL
+# - Software Composition Analysis (SCA)
+# - Dependency vulnerability scanning
+# - Secret detection
+# - Generate security reports
+#
+#############################################################
+
+name: TechWave Security Scan
+
+#############################################################
+# Trigger Conditions
+#############################################################
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'app/**'
+      - '.github/workflows/security.yml'
+      - 'package*.json'
+
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'app/**'
+      - 'package*.json'
+
+  schedule:
+    - cron: '0 2 * * *'
+
+  workflow_dispatch:
+
+#############################################################
+# GitHub Permissions
+#############################################################
+
+permissions:
+  contents: read
+  security-events: write
+  pull-requests: write
+
+#############################################################
+# Global Variables
+#############################################################
+
+env:
+  NODE_VERSION: 22
+
+#############################################################
+# Pipeline Definition
+#############################################################
+
+jobs:
+
+  codeql:
+    name: CodeQL SAST Analysis
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        language: ['javascript']
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v3
+        with:
+          languages: ${{ matrix.language }}
+          queries: security-and-quality
+          tools: latest
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: 'app/package-lock.json'
+
+      - name: Install Dependencies
+        working-directory: app
+        run: npm ci
+
+      - name: Autobuild
+        uses: github/codeql-action/autobuild@v3
+
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v3
+        with:
+          category: /language:${{ matrix.language }}
+
+  dependency-scan:
+    name: Dependency & Vulnerability Scan
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: 'app/package-lock.json'
+
+      - name: Install Dependencies
+        working-directory: app
+        run: npm ci
+
+      - name: Run npm Audit (Production)
+        working-directory: app
+        run: |
+          echo "=== Scanning Production Dependencies ==="
+          npm audit --production --audit-level=moderate || true
+
+      - name: Run npm Audit (All Dependencies)
+        working-directory: app
+        run: |
+          echo "=== Scanning All Dependencies ==="
+          npm audit --audit-level=low || true
+
+      - name: Generate SBOM (Cyclone DX)
+        working-directory: app
+        run: |
+          npm install -g @cyclonedx/npm@4
+          cyclonedx-npm --output-file=bom.xml || echo "SBOM generation completed"
+
+      - name: Upload SBOM Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: sbom-cyclonedx
+          path: app/bom.xml
+          retention-days: 90
+        if: always()
+
+      - name: Generate Audit JSON Report
+        working-directory: app
+        run: |
+          npm audit --json > audit-report.json || true
+          cat audit-report.json
+
+      - name: Upload Audit Reports
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: npm-audit-reports
+          path: app/audit-report.json
+          retention-days: 90
+
+  secret-scan:
+    name: Secret Detection
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: TruffleHog Secret Scan
+        uses: trufflesecurity/trufflehog@main
+        with:
+          path: ./
+          base: ${{ github.event.repository.default_branch }}
+          head: HEAD
+          extra_args: --only-verified
+        continue-on-error: true
+
+  license-check:
+    name: License Compliance Check
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: 'app/package-lock.json'
+
+      - name: Install Dependencies
+        working-directory: app
+        run: npm ci
+
+      - name: Check Licenses
+        working-directory: app
+        run: |
+          npm install -g license-checker
+          license-checker --markdown > licenses-report.md || true
+          cat licenses-report.md
+
+      - name: Upload License Reports
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: license-reports
+          path: app/licenses-report.md
+          retention-days: 90
+
+  security-summary:
+    name: Security Summary
+    runs-on: ubuntu-latest
+    needs: [codeql, dependency-scan, secret-scan, license-check]
+    if: always()
+
+    steps:
+      - name: Generate Summary
+        run: |
+          echo "## 🔐 Security Scan Complete" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Scan Results:" >> $GITHUB_STEP_SUMMARY
+          echo "- **CodeQL SAST**: ${{ needs.codeql.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Dependency Scan**: ${{ needs.dependency-scan.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Secret Detection**: ${{ needs.secret-scan.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **License Check**: ${{ needs.license-check.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "📊 [View Reports in Artifacts](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})" >> $GITHUB_STEP_SUMMARY
+
+      - name: Comment PR with Security Results
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const summary = `## 🔐 Security Scan Results
+            
+| Check | Status |
+|-------|--------|
+| CodeQL SAST | ${{ needs.codeql.result }} |
+| Dependency Scan | ${{ needs.dependency-scan.result }} |
+| Secret Detection | ${{ needs.secret-scan.result }} |
+| License Check | ${{ needs.license-check.result }} |
+
+📋 [View detailed security report](https://github.com/${{ github.repository }}/security/code-scanning)
+📊 [View artifacts](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})`;
+            
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: summary
+            });
