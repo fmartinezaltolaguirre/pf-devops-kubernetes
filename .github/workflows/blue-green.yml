@@ -32,6 +32,7 @@ env:
   REGISTRY: ghcr.io
   IMAGE_NAME: ${{ github.repository_owner }}/techwave-app
   KUBE_NAMESPACE: techwave
+  KUBECONFIG_PATH: $HOME/.kube/config
 
 jobs:
   build-and-test:
@@ -121,23 +122,42 @@ jobs:
           version: 'v1.28.0'
 
       - name: Configure kubeconfig
+        shell: bash
+        env:
+          KUBE_CONFIG_B64: ${{ secrets.KUBE_CONFIG }}
         run: |
-          mkdir -p $HOME/.kube
-          echo "${{ secrets.KUBE_CONFIG }}" | base64 -d > $HOME/.kube/config
-          chmod 600 $HOME/.kube/config
+          set -euo pipefail
+
+          if [ -z "${KUBE_CONFIG_B64:-}" ]; then
+            echo "::error::The repository secret KUBE_CONFIG is not configured."
+            exit 1
+          fi
+
+          mkdir -p "$(dirname "$KUBECONFIG_PATH")"
+          printf '%s' "$KUBE_CONFIG_B64" | base64 -d > "$KUBECONFIG_PATH"
+          chmod 600 "$KUBECONFIG_PATH"
+
+          export KUBECONFIG="$KUBECONFIG_PATH"
+          kubectl config view --minify >/dev/null
           kubectl cluster-info
 
       - name: Deploy Green Version
+        env:
+          KUBECONFIG: ${{ env.KUBECONFIG_PATH }}
         run: |
           IMAGE=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ needs.build-and-test.outputs.image-tag }}
           echo "Deploying green with image: $IMAGE"
           kubectl -n ${{ env.KUBE_NAMESPACE }} set image deployment/techwave-green techwave=$IMAGE --record
 
       - name: Wait for Green Rollout
+        env:
+          KUBECONFIG: ${{ env.KUBECONFIG_PATH }}
         run: |
           kubectl -n ${{ env.KUBE_NAMESPACE }} rollout status deployment/techwave-green --timeout=300s
 
       - name: Verify Green Pods
+        env:
+          KUBECONFIG: ${{ env.KUBECONFIG_PATH }}
         run: |
           kubectl -n ${{ env.KUBE_NAMESPACE }} get pods -l version=green -o wide
           kubectl -n ${{ env.KUBE_NAMESPACE }} wait --for=condition=ready pod -l version=green --timeout=180s
@@ -155,12 +175,27 @@ jobs:
         uses: azure/setup-kubectl@v3
 
       - name: Configure kubeconfig
+        shell: bash
+        env:
+          KUBE_CONFIG_B64: ${{ secrets.KUBE_CONFIG }}
         run: |
-          mkdir -p $HOME/.kube
-          echo "${{ secrets.KUBE_CONFIG }}" | base64 -d > $HOME/.kube/config
-          chmod 600 $HOME/.kube/config
+          set -euo pipefail
+
+          if [ -z "${KUBE_CONFIG_B64:-}" ]; then
+            echo "::error::The repository secret KUBE_CONFIG is not configured."
+            exit 1
+          fi
+
+          mkdir -p "$(dirname "$KUBECONFIG_PATH")"
+          printf '%s' "$KUBE_CONFIG_B64" | base64 -d > "$KUBECONFIG_PATH"
+          chmod 600 "$KUBECONFIG_PATH"
+
+          export KUBECONFIG="$KUBECONFIG_PATH"
+          kubectl config view --minify >/dev/null
 
       - name: Health Check Green
+        env:
+          KUBECONFIG: ${{ env.KUBECONFIG_PATH }}
         run: |
           kubectl -n ${{ env.KUBE_NAMESPACE }} port-forward svc/techwave-green 3000:80 >/dev/null 2>&1 &
           PF_PID=$!
@@ -178,6 +213,8 @@ jobs:
           kill $PF_PID
 
       - name: Smoke Test Green
+        env:
+          KUBECONFIG: ${{ env.KUBECONFIG_PATH }}
         run: |
           kubectl -n ${{ env.KUBE_NAMESPACE }} port-forward svc/techwave-green 3000:80 >/dev/null 2>&1 &
           PF_PID=$!
@@ -205,12 +242,27 @@ jobs:
         uses: azure/setup-kubectl@v3
 
       - name: Configure kubeconfig
+        shell: bash
+        env:
+          KUBE_CONFIG_B64: ${{ secrets.KUBE_CONFIG }}
         run: |
-          mkdir -p $HOME/.kube
-          echo "${{ secrets.KUBE_CONFIG }}" | base64 -d > $HOME/.kube/config
-          chmod 600 $HOME/.kube/config
+          set -euo pipefail
+
+          if [ -z "${KUBE_CONFIG_B64:-}" ]; then
+            echo "::error::The repository secret KUBE_CONFIG is not configured."
+            exit 1
+          fi
+
+          mkdir -p "$(dirname "$KUBECONFIG_PATH")"
+          printf '%s' "$KUBE_CONFIG_B64" | base64 -d > "$KUBECONFIG_PATH"
+          chmod 600 "$KUBECONFIG_PATH"
+
+          export KUBECONFIG="$KUBECONFIG_PATH"
+          kubectl config view --minify >/dev/null
 
       - name: Activate Green Traffic
+        env:
+          KUBECONFIG: ${{ env.KUBECONFIG_PATH }}
         run: |
           kubectl -n ${{ env.KUBE_NAMESPACE }} patch svc techwave-active \
             --type merge \
@@ -220,6 +272,8 @@ jobs:
           kubectl -n ${{ env.KUBE_NAMESPACE }} get svc techwave-active -o jsonpath='{.spec.selector}'
 
       - name: Production Smoke Test
+        env:
+          KUBECONFIG: ${{ env.KUBECONFIG_PATH }}
         run: |
           kubectl -n ${{ env.KUBE_NAMESPACE }} port-forward svc/techwave-active 3000:80 >/dev/null 2>&1 &
           PF_PID=$!
@@ -245,12 +299,27 @@ jobs:
         uses: azure/setup-kubectl@v3
 
       - name: Configure kubeconfig
+        shell: bash
+        env:
+          KUBE_CONFIG_B64: ${{ secrets.KUBE_CONFIG }}
         run: |
-          mkdir -p $HOME/.kube
-          echo "${{ secrets.KUBE_CONFIG }}" | base64 -d > $HOME/.kube/config
-          chmod 600 $HOME/.kube/config
+          set -euo pipefail
+
+          if [ -z "${KUBE_CONFIG_B64:-}" ]; then
+            echo "::error::The repository secret KUBE_CONFIG is not configured."
+            exit 1
+          fi
+
+          mkdir -p "$(dirname "$KUBECONFIG_PATH")"
+          printf '%s' "$KUBE_CONFIG_B64" | base64 -d > "$KUBECONFIG_PATH"
+          chmod 600 "$KUBECONFIG_PATH"
+
+          export KUBECONFIG="$KUBECONFIG_PATH"
+          kubectl config view --minify >/dev/null
 
       - name: Rollback Traffic to Blue
+        env:
+          KUBECONFIG: ${{ env.KUBECONFIG_PATH }}
         run: |
           kubectl -n ${{ env.KUBE_NAMESPACE }} patch svc techwave-active \
             --type merge \
@@ -259,6 +328,8 @@ jobs:
           echo "Traffic reverted to blue"
 
       - name: Undo Green Deployment
+        env:
+          KUBECONFIG: ${{ env.KUBECONFIG_PATH }}
         run: |
           kubectl -n ${{ env.KUBE_NAMESPACE }} rollout undo deployment/techwave-green
           kubectl -n ${{ env.KUBE_NAMESPACE }} rollout status deployment/techwave-green --timeout=180s
