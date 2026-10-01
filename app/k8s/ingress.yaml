@@ -1,42 +1,25 @@
 # ==========================================
 # Ingress TechWave
-# Expone el servicio al exterior
+# Expone el servicio activo de la estrategia Blue/Green
 # ==========================================
 
 apiVersion: networking.k8s.io/v1
-
 kind: Ingress
-
 metadata:
   name: techwave-ingress
   namespace: techwave
-
   annotations:
-
-    # Fuerza uso de HTTP para entorno local
     nginx.ingress.kubernetes.io/ssl-redirect: "false"
-
 spec:
-
   ingressClassName: nginx
-
   rules:
-
     - host: techwave.local
-
       http:
-
         paths:
-
           - path: /
             pathType: Prefix
-
             backend:
-
               service:
-
-                name: techwave-service
-
+                name: techwave-active
                 port:
                   number: 80
-
