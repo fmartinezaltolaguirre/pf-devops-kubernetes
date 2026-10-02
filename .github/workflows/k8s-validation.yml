@@ -1,0 +1,140 @@
+name: TechWave K8s Validation
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'app/k8s/**'
+      - 'k8s/**'
+      - '.github/workflows/k8s-validation.yml'
+
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'app/k8s/**'
+      - 'k8s/**'
+
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  yaml-lint:
+    name: YAML Lint
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Lint YAML files
+        uses: ibm-cloud-tools/yamllint-action@v1
+        with:
+          config_file: .github/yamllint-config.yaml
+          strict: true
+
+  kubeval:
+    name: Kubeval - Schema Validation
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Validate Kubernetes manifests with kubeval
+        uses: instrumenta/kubeval-action@master
+        with:
+          files: app/k8s/,k8s/
+          strict: true
+          ignore-missing-schemas: false
+
+  kube-linter:
+    name: KubeLinter - Security & Best Practices
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Run KubeLinter
+        uses: stackrox/kube-linter-action@v1
+        with:
+          directory: app/k8s/
+          format: sarif
+          output-file: kube-linter-results.sarif
+        continue-on-error: true
+
+      - name: Upload KubeLinter results
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: kube-linter-results.sarif
+          category: kube-linter
+
+  kubectl-dry-run:
+    name: Kubectl Dry-Run
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup kubectl
+        uses: azure/setup-kubectl@v3
+
+      - name: Dry-run namespace manifest
+        run: kubectl apply -f app/k8s/namespace.yaml --dry-run=client -o yaml
+
+      - name: Dry-run ConfigMap manifest
+        run: kubectl apply -f app/k8s/configmap.yaml --dry-run=client -o yaml
+
+      - name: Dry-run Secret manifest
+        run: kubectl apply -f app/k8s/secret.yaml --dry-run=client -o yaml
+
+      - name: Dry-run Deployment Blue
+        run: kubectl apply -f app/k8s/deployment-blue.yaml --dry-run=client -o yaml
+
+      - name: Dry-run Deployment Green
+        run: kubectl apply -f app/k8s/deployment-green.yaml --dry-run=client -o yaml
+
+      - name: Dry-run Service manifest
+        run: kubectl apply -f app/k8s/service.yaml --dry-run=client -o yaml
+
+      - name: Dry-run ServiceMonitor
+        run: kubectl apply -f k8s/servicemonitor.yaml --dry-run=client -o yaml
+
+  resource-check:
+    name: Resource Limits Check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Check CPU/Memory limits
+        run: |
+          for file in app/k8s/deployment-*.yaml; do
+            echo "Checking $file..."
+            if grep -q "resources:" "$file"; then
+              echo "✓ Resources defined in $file"
+              grep -A 5 "resources:" "$file"
+            else
+              echo "⚠ WARNING: No resources defined in $file"
+            fi
+          done
+
+  summary:
+    name: K8s Validation Summary
+    runs-on: ubuntu-latest
+    needs: [yaml-lint, kubeval, kube-linter, kubectl-dry-run, resource-check]
+    if: always()
+    steps:
+      - name: Generate Summary
+        run: |
+          echo "## ✅ Kubernetes Manifest Validation Complete" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Validation Results:" >> $GITHUB_STEP_SUMMARY
+          echo "- **YAML Lint**: ${{ needs.yaml-lint.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Kubeval**: ${{ needs.kubeval.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **KubeLinter**: ${{ needs.kube-linter.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Kubectl Dry-Run**: ${{ needs.kubectl-dry-run.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Resource Check**: ${{ needs.resource-check.result }}" >> $GITHUB_STEP_SUMMARY
