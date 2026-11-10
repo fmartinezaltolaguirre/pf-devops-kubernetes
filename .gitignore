@@ -1,0 +1,31 @@
+# Node / JS
+node_modules/
+app/node_modules/
+.npm/
+.npmrc
+npm-debug.log*
+
+# Environment
+.env
+.env.*
+!.env.example
+
+# Test / coverage
+coverage/
+
+# Build artifacts
+dist/
+build/
+
+# Terraform
+auto.tfvars
+*.tfstate
+*.tfstate.*
+.terraform/
+.terraform.lock.hcl
+
+# OS/editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
