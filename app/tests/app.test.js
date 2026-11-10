@@ -26,4 +26,14 @@ describe("TechWave API", () => {
     expect(response.text).toContain("techwave_process_cpu_user_seconds_total");
   });
 
+  test("unmatched URLs use a bounded route label in metrics", async () => {
+    const unmatchedPath = "/not-found/unique-id-123";
+    const notFoundResponse = await request(app).get(unmatchedPath);
+    const metricsResponse = await request(app).get("/metrics");
+
+    expect(notFoundResponse.statusCode).toBe(404);
+    expect(metricsResponse.text).toContain('route="unmatched"');
+    expect(metricsResponse.text).not.toContain(unmatchedPath);
+  });
+
 });

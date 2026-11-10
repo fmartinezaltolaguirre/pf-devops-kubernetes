@@ -28,7 +28,9 @@ app.use((req, res, next) => {
   const start = process.hrtime.bigint();
 
   res.on("finish", () => {
-    const route = req.route ? req.route.path : req.path;
+    // Use the Express route template, never the raw URL, to keep metric
+    // cardinality bounded. Requests that match no route share one label.
+    const route = req.route ? req.route.path : "unmatched";
     const responseTime = Number(process.hrtime.bigint() - start) / 1e9;
 
     httpRequestsTotal.inc({
