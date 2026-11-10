@@ -35,7 +35,6 @@ jobs:
         uses: ibm-cloud-tools/yamllint-action@v1
         with:
           strict: true
-        continue-on-error: true
 
   kubeval:
     name: Kubeval - Schema Validation
@@ -49,7 +48,6 @@ jobs:
         with:
           files: app/k8s/,k8s/
           strict: true
-        continue-on-error: true
 
   kube-linter:
     name: KubeLinter - Security & Best Practices
@@ -64,7 +62,6 @@ jobs:
           directory: app/k8s/
           format: sarif
           output-file: kube-linter-results.sarif
-        continue-on-error: true
 
       - name: Upload KubeLinter results
         uses: github/codeql-action/upload-sarif@v3
@@ -87,25 +84,25 @@ jobs:
         run: |
           echo "=== Validating namespace.yaml ==="
           kubectl apply -f app/k8s/namespace.yaml --dry-run=client -o yaml > /dev/null
-          
+
           echo "=== Validating configmap.yaml ==="
           kubectl apply -f app/k8s/configmap.yaml --dry-run=client -o yaml > /dev/null
-          
+
           echo "=== Validating secret.yaml ==="
           kubectl apply -f app/k8s/secret.yaml --dry-run=client -o yaml > /dev/null
-          
+
           echo "=== Validating deployment-blue.yaml ==="
           kubectl apply -f app/k8s/deployment-blue.yaml --dry-run=client -o yaml > /dev/null
-          
+
           echo "=== Validating deployment-green.yaml ==="
           kubectl apply -f app/k8s/deployment-green.yaml --dry-run=client -o yaml > /dev/null
-          
+
           echo "=== Validating service.yaml ==="
           kubectl apply -f app/k8s/service.yaml --dry-run=client -o yaml > /dev/null
-          
+
           echo "=== Validating servicemonitor.yaml ==="
           kubectl apply -f k8s/servicemonitor.yaml --dry-run=client -o yaml > /dev/null
-          
+
           echo "✅ All manifests validated successfully"
 
   resource-check:
@@ -145,7 +142,14 @@ jobs:
           echo "- **Kubectl Dry-Run**: ${{ needs.kubectl-dry-run.result }}" >> $GITHUB_STEP_SUMMARY
           echo "- **Resource Check**: ${{ needs.resource-check.result }}" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "✨ All K8s manifests validated before deployment" >> $GITHUB_STEP_SUMMARY
+
+          if [[ "${{ needs.yaml-lint.result }}" != "success" || "${{ needs.kubeval.result }}" != "success" || "${{ needs.kube-linter.result }}" != "success" || "${{ needs.kubectl-dry-run.result }}" != "success" ]]; then
+            echo "❌ Critical validation checks failed. Deployment is blocked." >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            exit 1
+          fi
+
+          echo "✨ All critical K8s validations passed before deployment" >> $GITHUB_STEP_SUMMARY
 
       - name: Comment PR with K8s Validation Results
         if: github.event_name == 'pull_request'
@@ -166,5 +170,5 @@ jobs:
 | Kubectl Dry-Run | ${{ needs.kubectl-dry-run.result }} |
 | Resource Limits | ${{ needs.resource-check.result }} |
 
-✨ All K8s manifests validated before deployment`
+✨ All critical validations must pass before deployment.`
             });
